@@ -1,0 +1,85 @@
+#docker network create -d overlay --attachable traefik_default
+# save sensitive variables in .env file
+#validate config using : docker-compose -f docker-compose.bigchaindb.yml config
+
+#Create directories first
+#mkdir -p /home/nick/server-setup/bigchaindb/tendermint
+#etc
+# env $(cat .env | grep ^[A-Z] | xargs) docker stack deploy -c docker-compose.bigchaindb.yml bigchaindb
+#https://thenewstack.io/tutorial-create-a-docker-swarm-with-persistent-storage-using-glusterfs/
+
+version: '3.2'
+networks:
+    traefik_default:
+      driver: overlay
+      external:
+        name:  traefik_default
+    backend:
+
+services:
+    
+    bigchaindb:
+        image: 'bigchaindb/bigchaindb:all-in-one'
+        volumes:
+            - '/home/nick/server-setup/bigchaindb/mongodb/data/db:/data/db'
+            - '/home/nick/server-setup/bigchaindb/mongodb/data/configdb:/data/configdb'
+            - '/home/nick/server-setup/bigchaindb/tendermint:/tendermint'
+        networks:
+            - traefik_default
+        
+        deploy:
+            labels:
+                # The labels are usefull for Traefik only
+                - "traefik.enable=true"
+                - "traefik.docker.network=traefik_default"
+                # Get the routes from http
+                - "traefik.http.routers.bigchaindb.rule=Host(`bigchaindb.${DOMAIN_NAME}`)"
+                - "traefik.http.routers.bigchaindb.entrypoints=web"
+                # Redirect these routes to https
+                - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+                - "traefik.http.routers.bigchaindb.middlewares=redirect-to-https@docker"
+                # Get the routes from https
+                - "traefik.http.routers.bigchaindb-secure.rule=Host(`bigchaindb.${DOMAIN_NAME}`)"
+                - "traefik.http.routers.bigchaindb-secure.entrypoints=websecure"
+                - "traefik.http.routers.bigchaindb-secure.tls=true"
+                - "traefik.http.services.bigchaindb.loadbalancer.server.port=9984"
+                - "traefik.http.routers.bigchaindb-secure.service=bigchaindb"
+
+                # # Get the routes from http
+                # - "traefik.http.routers.bigchaindb2.rule=Host(`bigchaindb.${DOMAIN_NAME}`)"
+                # - "traefik.http.routers.bigchaindb2.entrypoints=web2"
+                # # Redirect these routes to https
+                # - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+                # - "traefik.http.routers.bigchaindb2.middlewares=redirect-to-https@docker"
+                # # Get the routes from https
+                # - "traefik.http.routers.bigchaindb2-secure.rule=Host(`bigchaindb.${DOMAIN_NAME}`)"
+                # - "traefik.http.routers.bigchaindb2-secure.entrypoints=websecure2"
+                # - "traefik.http.routers.bigchaindb2-secure.tls=true"
+                # - "traefik.http.services.bigchaindb2.loadbalancer.server.port=9985"
+                # - "traefik.http.routers.bigchaindb2-secure.service=bigchaindb2"
+
+                # # Get the routes from http
+                # - "traefik.http.routers.bigchaindb3.rule=Host(`bigchaindb.${DOMAIN_NAME}`)"
+                # - "traefik.http.routers.bigchaindb3.entrypoints=web3"
+                # # Redirect these routes to https
+                # - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+                # - "traefik.http.routers.bigchaindb3.middlewares=redirect-to-https@docker"
+                # # Get the routes from https
+                # - "traefik.http.routers.bigchaindb3-secure.rule=Host(`bigchaindb.${DOMAIN_NAME}`)"
+                # - "traefik.http.routers.bigchaindb3-secure.entrypoints=websecure3"
+                # - "traefik.http.routers.bigchaindb3-secure.tls=true"
+                # - "traefik.http.services.bigchaindb3.loadbalancer.server.port=27017"
+                # - "traefik.http.routers.bigchaindb3-secure.service=bigchaindb3"
+    
+                # # Get the routes from http
+                # - "traefik.http.routers.bigchaindb4.rule=Host(`bigchaindb.${DOMAIN_NAME}`)"
+                # - "traefik.http.routers.bigchaindb4.entrypoints=web4"
+                # # Redirect these routes to https
+                # - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+                # - "traefik.http.routers.bigchaindb4.middlewares=redirect-to-https@docker"
+                # # Get the routes from https
+                # - "traefik.http.routers.bigchaindb4-secure.rule=Host(`bigchaindb.${DOMAIN_NAME}`)"
+                # - "traefik.http.routers.bigchaindb4-secure.entrypoints=websecure4"
+                # - "traefik.http.routers.bigchaindb4-secure.tls=true"
+                # - "traefik.http.services.bigchaindb4.loadbalancer.server.port=26657"
+                # - "traefik.http.routers.bigchaindb4-secure.service=bigchaindb4"
